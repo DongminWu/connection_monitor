@@ -3,4 +3,4 @@ from recorder import Recorder
 
 
 if __name__ == "__main__":
-    passs
+    pass
