@@ -57,13 +57,13 @@ class Worker(multiprocessing.Process):
                 ip = self.addr_list[idx]['ip']
                 name = self.addr_list[idx]['name']
                 ret = self._ping_addr(ip)
-                if not ret and not self.status_list[idx]:
+                if not ret :
                     # print(ip+' lost connection')
-                    self.message_queue.put('TODO: error message '+ip)
+                    self.message_queue.put('注意： '+name+'/'+ip+'断开链接')
                     self.status_list[idx] = True
                 elif self.status_list[idx] and ret:
                     # print(ip+' reconnected')
-                    self.message_queue.put('TODO: reconnecting message '+ ip)
+                    self.message_queue.put(' '+name+'/'+ip+'已链接')
                     self.status_list[idx] = False
 
     def _ping_addr(self, ip_addr):
@@ -82,7 +82,22 @@ class Worker(multiprocessing.Process):
 
     def _parse_ping_stdout(self, raw_text):
         if platform.system() == "Windows":
-            pass
+            raw_text = raw_text.decode('gbk')
+            end = -1
+            begin = -1
+            for e in raw_text.splitlines():
+                if e.find('无法访问目标主机') != -1:
+                    break
+                end = e.find('%')
+                if end != -1:
+                    begin = e.rfind('(')
+                    last_line = e
+                    break
+            if begin + 1 >= end:
+                loss_rate = 100.0
+            else:
+                loss_rate = float(last_line[begin+1:end].strip())
+            print('loss_rate=', loss_rate)
         else:
             raw_text = raw_text.decode('utf-8')
             last_line = raw_text.splitlines()[-1]

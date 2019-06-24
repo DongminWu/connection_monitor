@@ -1,3 +1,4 @@
+
 from worker import Worker
 from recorder import Recorder
 import multiprocessing
@@ -28,10 +29,14 @@ class Controller:
         if not os.path.exists(ip_addr_file):
             raise ValueError(ip_addr_file+"doesn't exist.")
 
-        with open(ip_addr_file) as f:
+        with open(ip_addr_file, 'r') as f:
             lines = f.readlines()
+            
             for l in lines:
                 info = l.strip().split(',')
+                if len(info) < 2:
+                    continue
+                print(info)
                 self.ip_addr_list.append({'ip':info[0], 'name':info[1]})
     
     def _split_list(self, ori_list, number):
