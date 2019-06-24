@@ -22,6 +22,7 @@ class Recorder:
             self._open_file()       
 
         self.f.write('['+type+']'+message+ '\n')
+        self.f.flush()
         
 
 
