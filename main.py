@@ -1,20 +1,24 @@
 
-from worker import Worker
+from worker import Worker, WorkerContext
 from recorder import Recorder
 import multiprocessing
 
 import config
 import datetime
+import utils
 
 import os
+import time
+
 
 class Controller:
     def __init__(self):
         self._config_checker()
         self.ip_addr_list = []
         self._parse_ip_addr(config.IP_ADDR_FILE)
-        self.recorder =Recorder(config.LOG_PATH)
-        self.msg_queue =  multiprocessing.Queue()
+        self.recorder = Recorder(config.LOG_PATH)
+        self.msg_queue = multiprocessing.Queue()
+        self.context = self._get_worker_context()
 
     def _config_checker(self):
         assert(config.LOG_PATH)
@@ -24,21 +28,25 @@ class Controller:
         assert(config.PING_SIZE)
         # assert(config.RECONNECTING_INTERVAL)
 
-
     def _parse_ip_addr(self, ip_addr_file):
         if not os.path.exists(ip_addr_file):
             raise ValueError(ip_addr_file+"doesn't exist.")
-
-        with open(ip_addr_file, 'r') as f:
+        with open(ip_addr_file, 'rb') as f:
             lines = f.readlines()
-            
+
             for l in lines:
+
+                try:
+                    l = l.decode('utf-8')
+                except UnicodeDecodeError:
+                    l = l.decode('gbk')
+                
                 info = l.strip().split(',')
                 if len(info) < 2:
                     continue
                 print(info)
-                self.ip_addr_list.append({'ip':info[0], 'name':info[1]})
-    
+                self.ip_addr_list.append({'ip': info[0], 'name': info[1]})
+
     def _split_list(self, ori_list, number):
         '''
             split a list in to `number` lists.
@@ -67,36 +75,46 @@ class Controller:
                 ret.append(tmp)
         return ret
 
-
+    def _get_worker_context(self):
+        context = WorkerContext()
+        context.set_msg_queue(self.msg_queue)
+        context.set_ping_count(config.PING_COUNT)
+        context.set_ping_size(config.PING_SIZE)
+        context.set_ping_wait_time(config.PINT_WAIT_TIME)
+        if not context.message_queue:
+            raise ValueError('the message queue should not be None..')
+        print('ping command:', ' '.join(context.generate_ping_command('127.0.0.1')))
+        return context
+        
 
     def do_work(self):
         print('initializing worker')
-        all_task = self._split_list(self.ip_addr_list, config.MAX_NUM_OF_WORKERS)
+        all_task = self._split_list(
+            self.ip_addr_list, config.MAX_NUM_OF_WORKERS)
         workers = []
         for t in all_task:
-            workers.append(Worker(t, self.msg_queue))
+            workers.append((Worker(t, self.context), t))
         print('start monitoring...')
-        for w in workers:
+        for w, t in workers:
+            w.daemon = True
             w.start()
         while True:
+            time.sleep(0.5)
+            for idx in range(len(workers)):
+                w, t = workers[idx]
+                if not w.is_alive():
+                    print('worker %s is dead, restarting' % w.pid)
+                    w = Worker(t, self.context)
+                    w.daemon = True
+                    w.start()
+                    workers[idx] = (w, t)
+                    print('finished, new pid: %s' % w.pid)
             if not self.msg_queue.empty():
                 msg = self.msg_queue.get()
-                self.recorder.write(msg, datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S'))
+                self.recorder.write(
+                    msg, datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S'))
                 print(msg)
 
-    '''
-        TODO:
-            1. 做个线程池的东西
-            2. 把测试的跑起来
-                链接controller， worker， recorder
-            3. 做个gui
-
-    '''
-
-
-    
-    
-    
 
 if __name__ == "__main__":
     c = Controller()

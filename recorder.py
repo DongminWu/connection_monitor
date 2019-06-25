@@ -6,7 +6,6 @@ class Recorder:
     def __init__(self, dir_path):
         
         self.directory_path = os.path.realpath(dir_path)
-        print(self.directory_path)
         os.makedirs(self.directory_path, exist_ok=True)
         self._open_file()
 
