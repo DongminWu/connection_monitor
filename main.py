@@ -63,7 +63,7 @@ class Controller:
                 ret.append(tmp)
             for idx in range(number-residual):
                 tmp = ori_list[:n_each]
-                ori_list[n_each:]
+                ori_list = ori_list[n_each:]
                 ret.append(tmp)
         return ret
 
@@ -102,4 +102,4 @@ if __name__ == "__main__":
     c = Controller()
     c.do_work()
     # print(c.ip_addr_list)
-    # print(c._split_list(c.ip_addr_list, 2))
+    # print(c._split_list(c.ip_addr_list, 3))

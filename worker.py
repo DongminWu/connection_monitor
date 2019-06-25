@@ -2,6 +2,7 @@
 import platform
 import subprocess
 import multiprocessing
+import os
 
 
 class Worker(multiprocessing.Process):
@@ -52,14 +53,18 @@ class Worker(multiprocessing.Process):
 
     def run(self):
         # for i in range(1):
+        # print('pid:',os.getpid(),'addr_list:', self.addr_list)
         while True:
             for idx in range(len(self.addr_list)):
                 ip = self.addr_list[idx]['ip']
                 name = self.addr_list[idx]['name']
+                # print('pid:',os.getpid(),'ready to ping', ip)
                 ret = self._ping_addr(ip)
+                # print('pid:',os.getpid(),'finished ping',ip)
+
                 if not ret :
                     # print(ip+' lost connection')
-                    self.message_queue.put('注意： '+name+'/'+ip+'断开链接')
+                    self.message_queue.put(':注意： '+name+'/'+ip+'断开链接')
                     self.status_list[idx] = True
                 elif self.status_list[idx] and ret:
                     # print(ip+' reconnected')
@@ -97,7 +102,7 @@ class Worker(multiprocessing.Process):
                 loss_rate = 100.0
             else:
                 loss_rate = float(last_line[begin+1:end].strip())
-            print('loss_rate=', loss_rate)
+            # print('loss_rate=', loss_rate)
         else:
             raw_text = raw_text.decode('utf-8')
             last_line = raw_text.splitlines()[-1]
