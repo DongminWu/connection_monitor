@@ -13,12 +13,7 @@ import time
 
 class Controller:
     def __init__(self):
-        self._config_checker()
-        self.ip_addr_list = []
-        self._parse_ip_addr(config.IP_ADDR_FILE)
-        self.recorder = Recorder(config.LOG_PATH)
-        self.msg_queue = multiprocessing.Queue()
-        self.context = self._get_worker_context()
+        self.initialize()
 
     def _config_checker(self):
         assert(config.LOG_PATH)
@@ -88,6 +83,7 @@ class Controller:
         
 
     def do_work(self):
+        self.status = 1
         print('initializing worker')
 
         # test the net card and ping
@@ -99,30 +95,48 @@ class Controller:
 
         all_task = self._split_list(
             self.ip_addr_list, config.MAX_NUM_OF_WORKERS)
-        workers = []
+        self.workers = []
         for t in all_task:
-            workers.append((Worker(t, self.context), t))
+            self.workers.append((Worker(t, self.context), t))
         print('start monitoring...')
-        for w, t in workers:
+        for w, t in self.workers:
             w.daemon = True
             w.start()
-        while True:
-            time.sleep(0.5)
-            for idx in range(len(workers)):
-                w, t = workers[idx]
+        while self.status == 1:
+            time.sleep(0.3)
+            for idx in range(len(self.workers)):
+                w, t = self.workers[idx]
                 if not w.is_alive():
                     print('worker %s is dead, restarting' % w.pid)
                     w = Worker(t, self.context)
                     w.daemon = True
                     w.start()
-                    workers[idx] = (w, t)
+                    self.workers[idx] = (w, t)
                     print('finished, new pid: %s' % w.pid)
             if not self.msg_queue.empty():
                 msg = self.msg_queue.get()
                 self.recorder.write(
                     str(msg), datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S'))
                 print(msg)
+    def terminate(self):
+        self.status = -1
+        for w, t in self.workers:
+            w.terminate()
+        
+        del self.msg_queue
+        del self.context
+        
 
+    def initialize(self):
+        self._config_checker()
+        self.ip_addr_list = []
+        self._parse_ip_addr(config.IP_ADDR_FILE)
+        self.recorder = Recorder(config.LOG_PATH)
+        self.msg_queue = multiprocessing.Queue()
+        self.context = self._get_worker_context()
+        self.workers = []
+        self.status = 0
+        
 
 if __name__ == "__main__":
     c = Controller()
