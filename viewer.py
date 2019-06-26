@@ -41,8 +41,7 @@ class MainView(Tk):
         self.list_box = Listbox(self.frame, selectmode=SINGLE, yscrollcommand=self.scroll.set)
         for i in range(20):
             self.list_box.insert(END, str(i)+": yo")
-        a = self.list_box.get(12)
-        print(a)
+        self.list_box.itemconfig(1,{'bg':'red', 'fg':'white'})
         self.list_box.pack(side=LEFT, fill=BOTH)
         self.scroll.config(command=self.list_box.yview)
         self.list_box.see(END) 
