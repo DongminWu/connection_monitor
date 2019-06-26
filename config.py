@@ -1,5 +1,5 @@
 LOG_PATH = "./save"
-PING_COUNT = 1
+PING_COUNT = 3
 PING_SIZE = 1
 PINT_WAIT_TIME = 0.02 # waiting time in second
 # RECONNECTING_INTERVAL = 1

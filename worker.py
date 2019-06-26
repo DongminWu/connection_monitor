@@ -16,7 +16,7 @@ class WorkerContext:
         if utils.is_windows():
             self.ping_count_arg = '-n'
             self.ping_size_arg = '-l'
-            self.ping_wait_time_arg = ""
+            self.ping_wait_time_arg = "-w"
         else:
 
             self.ping_count_arg = '-c'
@@ -41,18 +41,12 @@ class WorkerContext:
 
     def generate_ping_command(self, ip_addr):
         ret = ['ping']
-        if utils.is_windows():
-            ret.append(self.ping_count_arg)
-            ret.append(str(self.ping_count))
-            ret.append(self.ping_size_arg)
-            ret.append(str(self.ping_size))
-        else:
-            ret.append(self.ping_count_arg)
-            ret.append(str(self.ping_count))
-            ret.append(self.ping_size_arg)
-            ret.append(str(self.ping_size))
-            ret.append(self.ping_wait_time_arg)
-            ret.append(str(int(self.ping_wait_time * 1000)))
+        ret.append(self.ping_count_arg)
+        ret.append(str(self.ping_count))
+        ret.append(self.ping_size_arg)
+        ret.append(str(self.ping_size))
+        ret.append(self.ping_wait_time_arg)
+        ret.append(str(int(self.ping_wait_time * 1000)))
         ret.append(ip_addr)
         return ret
 
@@ -62,7 +56,7 @@ class Worker(multiprocessing.Process):
     '''
         NOTE:
         structure of `addr_list`:
-            [   
+            [
                 {
                     'ip': '127.0.0.1,
                     'name': 哟哟哟
@@ -78,7 +72,7 @@ class Worker(multiprocessing.Process):
         multiprocessing.Process.__init__(self)
         self.context = context
         self.addr_list = addr_list
-        self.status_list = [True] * len(addr_list)
+        self.status_list = [utils.MSG_STATUS.invalid] * len(addr_list)
 
         self.message_queue = self.context.message_queue
         if not self.message_queue:
@@ -87,10 +81,6 @@ class Worker(multiprocessing.Process):
         '''
             2. check if the ping command is available by ping 127.0.0.1
         '''
-        ret = self._ping_addr('127.0.0.1')
-        if not ret:
-            raise SystemError(
-                "We cannot connect to 127.0.0.1, pls check your net card.")
 
     def run(self):
         # for i in range(1):
@@ -102,14 +92,23 @@ class Worker(multiprocessing.Process):
                 name = self.addr_list[idx]['name']
                 ret = self._ping_addr(ip)
 
-                if not ret:
+                if not ret and self.status_list[idx] != utils.MSG_STATUS.disconnected:
                     # print(ip+' lost connection')
-                    self.message_queue.put(':注意： '+name+'/'+ip+'断开链接')
+                    self.message_queue.put(
+                        utils.MessagePacket(ip, name, utils.MSG_STATUS.disconnected))
                     self.status_list[idx] = True
-                elif self.status_list[idx] and ret:
+                elif self.status_list[idx] and self.status_list[idx] != utils.MSG_STATUS.reconnected:
                     # print(ip+' reconnected')
-                    self.message_queue.put(' '+name+'/'+ip+'已链接')
+                    self.message_queue.put(
+                        utils.MessagePacket(ip, name, utils.MSG_STATUS.reconnected))
                     self.status_list[idx] = False
+
+    def is_workable(self):
+        for each in self.addr_list:
+            r = self._ping_addr(each)
+            if not r:
+                return False
+        return True
 
     def _ping_addr(self, ip_addr):
         '''
@@ -156,7 +155,6 @@ class Worker(multiprocessing.Process):
 
 
 if __name__ == "__main__":
-
 
     fake_queue = multiprocessing.Queue()
     fake_addr_list = [

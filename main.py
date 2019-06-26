@@ -89,6 +89,14 @@ class Controller:
 
     def do_work(self):
         print('initializing worker')
+
+        # test the net card and ping
+        test_worker = Worker(['127.0.0.1'], self.context)
+        ret = test_worker.is_workable()
+        if not ret:
+            raise SystemError(
+                "We cannot connect to 127.0.0.1, pls check your net card.")
+
         all_task = self._split_list(
             self.ip_addr_list, config.MAX_NUM_OF_WORKERS)
         workers = []
@@ -112,7 +120,7 @@ class Controller:
             if not self.msg_queue.empty():
                 msg = self.msg_queue.get()
                 self.recorder.write(
-                    msg, datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S'))
+                    str(msg), datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S'))
                 print(msg)
 
 
