@@ -46,7 +46,7 @@ class WorkerContext:
         ret.append(self.ping_size_arg)
         ret.append(str(self.ping_size))
         ret.append(self.ping_wait_time_arg)
-        ret.append(str(int(self.ping_wait_time * 1000)))
+        ret.append(str(int(self.ping_wait_time)))
         ret.append(ip_addr)
         return ret
 
