@@ -1,7 +1,6 @@
 from worker import Worker, WorkerContext
 import multiprocessing
 
-import config
 import datetime
 import utils
 

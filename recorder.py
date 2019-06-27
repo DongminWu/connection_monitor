@@ -1,5 +1,4 @@
 import os
-import config
 import datetime
 
 class Recorder:
