@@ -73,6 +73,7 @@ class Worker(multiprocessing.Process):
         self.context = context
         self.addr_list = addr_list
         self.status_list = [utils.MSG_STATUS.invalid] * len(addr_list)
+        self.state = True
 
         self.message_queue = self.context.message_queue
         if not self.message_queue:
@@ -84,7 +85,7 @@ class Worker(multiprocessing.Process):
 
     def run(self):
         # for i in range(1):
-        # print('pid:',os.getpid(),'addr_list:', self.addr_list)
+        print('pid:',os.getpid(),'is running')
         while True:
             time.sleep(0.1)
             for idx in range(len(self.addr_list)):
@@ -102,6 +103,8 @@ class Worker(multiprocessing.Process):
                     self.message_queue.put(
                         utils.MessagePacket(ip, name, utils.MSG_STATUS.reconnected))
                     self.status_list[idx] = False
+        print('pid:',os.getpid(),'terminated')
+        
 
     def is_workable(self):
         for each in self.addr_list:

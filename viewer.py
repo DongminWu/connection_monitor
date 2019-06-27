@@ -5,6 +5,7 @@ import threading
 import utils
 from controller import Controller
 from recorder import Recorder
+import datetime
 
 '''
 class App(tkinter.Tk):
@@ -60,6 +61,7 @@ class ListView:
             if self.list_box.size() >= self.limit:
                 self.list_box.delete(0)
         self.list_box.insert(END, msg)
+        self.list_box.see(END)
         return self
 
     def set_default_color(self, index):
@@ -68,13 +70,13 @@ class ListView:
         return self
 
     def set_green(self, index):
-        self.list_box.itemconfig(END, {'bg': 'green', 'fg': 'black'})
+        self.list_box.itemconfig(index, {'bg': 'green', 'fg': 'black'})
         return self
 
     def set_red(self, index):
-        self.list_box.itemconfig(END, {'bg': 'red', 'fg': 'white'})
+        self.list_box.itemconfig(index, {'bg': 'red', 'fg': 'white'})
         return self
-    
+
     def clean(self):
         self.list_box.delete(0, END)
         return self
@@ -112,9 +114,12 @@ class MainView(Tk):
         super().__init__()
         self.initialize_view()
         self.controller = Controller()
-        self.controller.set_callback(self.view_callback)
+        self.controller.set_view_callback(self.view_callback)
+        self.controller.set_status_callback(self.status_callback)
+
         self.working_t = None
         self.recorder = None
+        self.ipaddr_to_status = {}
 
     def initialize_view(self):
         self.title("auto ping")
@@ -128,8 +133,7 @@ class MainView(Tk):
                                    pady=5, relief=RIDGE, command=self.on_press_startbutton)
         self.stop_button = Button(self, text='stop', padx=5,
                                   pady=5, relief=FLAT, command=self.on_press_stopbutton)
-        
-        
+
         self.config_file_box = InputBox(self, '配置文件地址:')
         self.ipaddr_file_box = InputBox(self, 'IP地址文件:    ')
         self.log_folder_box = InputBox(self,  '日志存储路径:')
@@ -146,36 +150,64 @@ class MainView(Tk):
         self.stop_button.grid(column=1, row=4, padx=10, pady=10)
 
         self.status_msg = StringVar()
-        self.status_msg.set('yoyo阿斯顿发送到发送到发送到蒂芬y')
+        self.status_msg.set('欢迎！')
         self.status_bar = Label(self, textvariable=self.status_msg)
         self.status_bar.grid(row=5)
 
     def view_callback(self, msg):
         self.history_list.append(str(msg))
+        self.recorder.write(str(msg), datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S"))
+        self.ipaddr_to_status[msg.ip]['status'] = msg.status
+        
+        if msg.status == utils.MSG_STATUS.disconnected:
+            self.status_list.set_red(self.ipaddr_to_status[msg.ip]['index'])
+        elif msg.status == utils.MSG_STATUS.reconnected:
+            self.status_list.set_green(self.ipaddr_to_status[msg.ip]['index'])
+
+        print(self.ipaddr_to_status[msg.ip]['index'], msg)
+
+
+    def status_callback(self, msg):
+        self.status_msg.set(msg)
 
     def on_press_startbutton(self):
         if not self.working_t:
-            self.controller.load_config(self.config_file_box.get_text())
-            self.controller.load_ipaddr(self.ipaddr_file_box.get_text())
-            self.recorder = Recorder(self.log_folder_box.get_text())
 
             self.config_file_box.disable()
             self.ipaddr_file_box.disable()
             self.log_folder_box.disable()
 
+            config = utils.load_config(self.config_file_box.get_text())
+            ipaddr_list = utils.load_ipaddr(self.ipaddr_file_box.get_text())
+            self.recorder = Recorder(self.log_folder_box.get_text())
 
-            self.controller.initialize_worker()
+            for idx in range(len(ipaddr_list)):
+                self.status_list.append("%s(%s)" % (ipaddr_list[idx]['name'], ipaddr_list[idx]['ip']))
+                self.status_list.set_red(idx)
+
+                self.ipaddr_to_status[ipaddr_list[idx]['ip']] = {
+                    'name': ipaddr_list[idx]['name'], 
+                    'status': utils.MSG_STATUS.disconnected,
+                    'index': idx
+                    }
+
+            print(self.ipaddr_to_status)
+            self.controller.initialize_worker(config, ipaddr_list)
             self.working_t = threading.Thread(target=self.controller.do_work)
             self.working_t.start()
+
     def on_press_stopbutton(self):
         if self.working_t:
             self.controller.terminate()
             self.working_t.join()
+            self.status_msg.set('监控停止')
             self.working_t = None
             self.history_list.clean()
+            self.status_list.clean()
             self.config_file_box.enable()
             self.ipaddr_file_box.enable()
             self.log_folder_box.enable()
+
     def do_work(self):
         self.mainloop()
 

@@ -11,12 +11,16 @@ import time
 
 class Controller:
     def __init__(self):
-        self.callback = None
-        self.config = {}
-        self.ip_addr_list = []
+        self.view_callback = None
+        self.status_callback = None
 
-    def set_callback(self, callback):
-        self.callback = callback
+
+    def set_view_callback(self, callback):
+        self.view_callback = callback
+        return self
+
+    def set_status_callback(self, callback):
+        self.status_callback  = callback
         return self
 
     def _config_checker(self):
@@ -25,25 +29,7 @@ class Controller:
         assert(self.config['PING_SIZE'])
         assert(self.config["PING_WAIT_TIME"])
 
-    def _parse_txt(self, ip_addr_file):
-        ret = []
-        if not os.path.exists(ip_addr_file):
-            raise ValueError(ip_addr_file+"doesn't exist.")
-        with open(ip_addr_file, 'rb') as f:
-            lines = f.readlines()
-
-            for l in lines:
-
-                try:
-                    l = l.decode('utf-8')
-                except UnicodeDecodeError:
-                    l = l.decode('gbk')
-
-                info = l.strip().split(',')
-                if len(info) < 2:
-                    continue
-                ret.append(info)
-        return ret
+    
 
     def _split_list(self, ori_list, number):
         '''
@@ -84,22 +70,11 @@ class Controller:
         print('ping command:', ' '.join(
             context.generate_ping_command('127.0.0.1')))
         return context
-    def load_config(self, path):
-        res = self._parse_txt(path)
-        for each in res:
-            self.config[each[0]] = int(each[1])
-        print(self.config)
-        return self
-        
-    def load_ipaddr(self, path):
-        res = self._parse_txt(path)
-        for each in res:
-            self.ip_addr_list.append({'ip':each[0], 'name':each[1]})
-        print(self.ip_addr_list)
-        return self
+
+
+    
     def do_work(self):
-        self.status = 1
-        print('initializing worker')
+        self.status_callback('initializing worker')
 
         # test the net card and ping
         test_worker = Worker(['127.0.0.1'], self.context)
@@ -113,48 +88,53 @@ class Controller:
         self.workers = []
         for t in all_task:
             self.workers.append((Worker(t, self.context), t))
-        print('start monitoring...')
+        self.status_callback('start monitoring...')
         for w, t in self.workers:
             w.daemon = True
             w.start()
-        while self.status == 1:
+        while True:
+            if self.state!= 1:
+                break
             time.sleep(0.3)
             for idx in range(len(self.workers)):
                 w, t = self.workers[idx]
-                if not w.is_alive():
+                if not w.is_alive() and self.state == 1:
                     print('worker %s is dead, restarting' % w.pid)
                     w = Worker(t, self.context)
                     w.daemon = True
                     w.start()
                     self.workers[idx] = (w, t)
                     print('finished, new pid: %s' % w.pid)
-            if not self.msg_queue.empty():
+            while not self.msg_queue.empty():
                 msg = self.msg_queue.get()
-                if self.callback:
-                    self.callback(msg)
+                if self.view_callback:
+                    self.view_callback(msg)
                 print(msg)
-        print('monitoring terminated')
 
     def terminate(self):
-        self.status = -1
+        self.state = -1
 
         for w, t in self.workers:
+            print(w.pid)
             w.terminate()
+        print('terminated')
 
-    def initialize_worker(self):
+
+    def initialize_worker(self, config, ip_addr_list):
+        self.config=config
+        self.ip_addr_list=ip_addr_list
         self._config_checker()
         self.msg_queue = multiprocessing.Queue()
         self.context = self._get_worker_context()
         self.workers = []
-        self.status = 0
+        self.state = 1
+
         
 
 
 if __name__ == "__main__":
     c = Controller()
-    c.load_config('./config.txt')
-    c.load_ipaddr('./ipaddrs.txt')
-    c.initialize_worker()
+    c.initialize_worker(utils.load_config('./config.txt'), utils.load_ipaddr('./ipaddrs.txt'))
     c.do_work()
     # print(c.ip_addr_list)
     # print(c._split_list(c.ip_addr_list, 3))
