@@ -6,6 +6,7 @@ import utils
 from controller import Controller
 from recorder import Recorder
 import datetime
+import multiprocessing
 
 '''
 class App(tkinter.Tk):
@@ -213,6 +214,7 @@ class MainView(Tk):
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     a = MainView()
     a.resizable(width=False, height=False)
     a.do_work()
