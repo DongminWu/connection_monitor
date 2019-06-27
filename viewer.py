@@ -130,6 +130,8 @@ class MainView(Tk):
         self.history_list.build().grid(column=0, row=0, padx=10, pady=10)
         self.status_list.build().grid(column=1, row=0, padx=10, pady=10)
 
+        self.history_list.set_limit(1000)
+
         self.start_button = Button(self, text='start', padx=5,
                                    pady=5, relief=RIDGE, command=self.on_press_startbutton)
         self.stop_button = Button(self, text='stop', padx=5,
