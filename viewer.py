@@ -42,7 +42,7 @@ class ListView:
     def build(self):
         self.history_frame = LabelFrame(self.parent, text=self.view_name)
         self.scroll = Scrollbar(self.history_frame)
-        self.scroll.pack(side=RIGHT, fill=Y, expand=1)
+        self.scroll.pack(side=RIGHT, fill=X)
         self.list_box = Listbox(
             self.history_frame, selectmode=SINGLE, yscrollcommand=self.scroll.set)
         self.list_box.pack(side=LEFT, fill=BOTH, expand=1)
@@ -127,8 +127,8 @@ class MainView(Tk):
         self.history_list = ListView(self, '历史记录')
         self.status_list = ListView(self, '链接状态')
 
-        self.history_list.build().grid(column=0, row=0, padx=10, pady=10)
-        self.status_list.build().grid(column=1, row=0, padx=10, pady=10)
+        self.history_list.build().grid(column=0, row=0, sticky=NSEW, padx=10, pady=10)
+        self.status_list.build().grid(column=1, row=0, sticky=NSEW, padx=10, pady=10)
 
         self.history_list.set_limit(1000)
 
@@ -141,21 +141,26 @@ class MainView(Tk):
         self.ipaddr_file_box = InputBox(self, 'IP地址文件:    ')
         self.log_folder_box = InputBox(self,  '日志存储路径:')
 
-        self.config_file_box.build().grid(row=1, columnspan=2, sticky=NSEW, padx=10)
-        self.ipaddr_file_box.build().grid(row=2, columnspan=2, sticky=NSEW, padx=10)
-        self.log_folder_box.build().grid(row=3, columnspan=2, sticky=NSEW, padx=10)
+        self.config_file_box.build().grid(row=1, columnspan=2, sticky=E+W, padx=10)
+        self.ipaddr_file_box.build().grid(row=2, columnspan=2, sticky=E+W, padx=10)
+        self.log_folder_box.build().grid(row=3, columnspan=2, sticky=E+W, padx=10)
 
         self.config_file_box.set_text('./config.txt')
         self.ipaddr_file_box.set_text('./ipaddrs.txt')
         self.log_folder_box.set_text('./save')
 
-        self.start_button.grid(column=0, row=4, padx=10, pady=10)
-        self.stop_button.grid(column=1, row=4, padx=10, pady=10)
+        self.start_button.grid(column=0, row=4, padx=10, pady=10, sticky=NSEW)
+        self.stop_button.grid(column=1, row=4, padx=10, pady=10, sticky=NSEW)
 
         self.status_msg = StringVar()
         self.status_msg.set('欢迎！')
         self.status_bar = Label(self, textvariable=self.status_msg)
-        self.status_bar.grid(row=5)
+        self.status_bar.grid(row=5, sticky = E+W)
+
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+
 
     def view_callback(self, msg):
         self.history_list.append(str(msg))
@@ -218,5 +223,5 @@ class MainView(Tk):
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     a = MainView()
-    a.resizable(width=False, height=False)
+    a.geometry('600x500')
     a.do_work()
