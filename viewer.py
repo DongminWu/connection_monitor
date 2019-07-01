@@ -42,7 +42,7 @@ class ListView:
     def build(self):
         self.history_frame = LabelFrame(self.parent, text=self.view_name)
         self.scroll = Scrollbar(self.history_frame)
-        self.scroll.pack(side=RIGHT, fill=X)
+        self.scroll.pack(side=RIGHT, fill=Y)
         self.list_box = Listbox(
             self.history_frame, selectmode=SINGLE, yscrollcommand=self.scroll.set)
         self.list_box.pack(side=LEFT, fill=BOTH, expand=1)
@@ -225,3 +225,4 @@ if __name__ == "__main__":
     a = MainView()
     a.geometry('600x500')
     a.do_work()
+    print('作者：吴东民，邮箱：wdm228@126.com')
