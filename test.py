@@ -3,7 +3,7 @@ from tkinter import *
 top = Tk()
 
 e = Entry(top)
-e.pack()
+e.grid(row=0, column=0, sticky= E+W)
 
 e.delete(0, END)
 e.insert(0, "a default value")

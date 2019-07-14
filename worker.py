@@ -13,6 +13,7 @@ class WorkerContext:
         self.ping_count = 1
         self.ping_size = 1
         self.ping_wait_time = 1
+        self.work_count = -1
         if utils.is_windows():
             self.ping_count_arg = '-n'
             self.ping_size_arg = '-l'
@@ -39,6 +40,10 @@ class WorkerContext:
         self.ping_wait_time = second
         return self
 
+    def set_work_count(self, count):
+        self.work_count = count
+        return self
+        
     def generate_ping_command(self, ip_addr):
         ret = ['ping']
         ret.append(self.ping_count_arg)
@@ -86,23 +91,23 @@ class Worker(multiprocessing.Process):
     def run(self):
         # for i in range(1):
         print('pid:',os.getpid(),'is running')
-        while True:
-            time.sleep(0.1)
+        c = 0
+        while self.context.work_count == -1 or c < self.context.work_count:
+            # print('pid:',os.getpid(), 'count', c)
+
             for idx in range(len(self.addr_list)):
                 ip = self.addr_list[idx]['ip']
                 name = self.addr_list[idx]['name']
                 ret = self._ping_addr(ip)
 
-                if not ret and self.status_list[idx] != utils.MSG_STATUS.disconnected:
-                    # print(ip+' lost connection')
+                if not ret:
                     self.message_queue.put(
                         utils.MessagePacket(ip, name, utils.MSG_STATUS.disconnected))
                     self.status_list[idx] = True
-                elif self.status_list[idx] and self.status_list[idx] != utils.MSG_STATUS.reconnected:
-                    # print(ip+' reconnected')
+                else:
                     self.message_queue.put(
                         utils.MessagePacket(ip, name, utils.MSG_STATUS.reconnected))
-                    self.status_list[idx] = False
+            c += 1
         print('pid:',os.getpid(),'terminated')
         
 

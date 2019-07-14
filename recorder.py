@@ -13,21 +13,23 @@ class Recorder:
         file_name = self.cur_date.strftime("%Y-%m-%d")+'.txt'
         self.f = open(os.path.join(self.directory_path, file_name), 'a+')
 
-    def write(self, message, type):
+    def write(self, message, msg_type=None):
         date = datetime.datetime.today().date()
         if date != self.cur_date:
             self.f.close()
             self._open_file()       
-
-        self.f.write('['+type+']'+message+ '\n')
+        if msg_type:
+            self.f.write('[%s]%s\n' % (msg_type, message))
+        else:
+            self.f.write('%s\n' % (message))
         self.f.flush()
         
 
 
 
 if __name__ == "__main__":
-
-    r = Recorder(config.LOG_PATH)
-    r.write('hello','reconnect')
+    pass
+    # r = Recorder(config.LOG_PATH)
+    # r.write('hello','reconnect')
 
             

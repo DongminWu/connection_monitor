@@ -8,29 +8,6 @@ from recorder import Recorder
 import datetime
 import multiprocessing
 
-'''
-class App(tkinter.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title = 'test'
-        self.var_to_change = tkinter.StringVar()
-        self.var_to_change.set('hello')
-        self.label = tkinter.Label(self, textvariable=self.var_to_change)
-        self.label.grid(column=0, row=0)
-
-    def test_thread(self):
-        time.sleep(1)
-        self.var_to_change.set('bye')
-
-    def lets_go(self):
-        t = threading.Thread(target=self.test_thread, name='thread-1')
-        t.start()
-        self.mainloop()
-
-if __name__ == "__main__":
-    top = App()
-    top.lets_go()
-'''
 
 
 class ListView:
@@ -115,8 +92,6 @@ class MainView(Tk):
         super().__init__()
         self.initialize_view()
         self.controller = Controller()
-        self.controller.set_view_callback(self.view_callback)
-        self.controller.set_status_callback(self.status_callback)
 
         self.working_t = None
         self.recorder = None
@@ -162,21 +137,6 @@ class MainView(Tk):
         self.columnconfigure(1, weight=1)
 
 
-    def view_callback(self, msg):
-        self.history_list.append(str(msg))
-        self.recorder.write(str(msg), datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S"))
-        self.ipaddr_to_status[msg.ip]['status'] = msg.status
-        
-        if msg.status == utils.MSG_STATUS.disconnected:
-            self.status_list.set_red(self.ipaddr_to_status[msg.ip]['index'])
-        elif msg.status == utils.MSG_STATUS.reconnected:
-            self.status_list.set_green(self.ipaddr_to_status[msg.ip]['index'])
-
-        print(self.ipaddr_to_status[msg.ip]['index'], msg)
-
-
-    def status_callback(self, msg):
-        self.status_msg.set(msg)
 
     def on_press_startbutton(self):
         if not self.working_t:
