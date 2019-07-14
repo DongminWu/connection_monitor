@@ -1,1 +1,1 @@
-pyinstaller -F viewer.py -c -i link.ico
+pyinstaller -F tester_main.py -c -i link.ico
