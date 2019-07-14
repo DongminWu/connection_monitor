@@ -87,9 +87,10 @@ class Controller:
                                'status': utils.MSG_STATUS.disconnected}], test_context)
         test_worker.start()
         test_worker.join()
+        test_msg = []
         while not self.msg_queue.empty():
-            msg = self.msg_queue.get()
-        ret = (msg.status == utils.MSG_STATUS.reconnected)
+            test_msg.append(self.msg_queue.get())
+        ret = (test_msg[0].status == utils.MSG_STATUS.reconnected)
         if not ret:
             raise SystemError(
                 "We cannot connect to 127.0.0.1, pls check your net card.")
@@ -100,29 +101,38 @@ class Controller:
         for t in all_task:
             self.workers.append((Worker(t, self.context), t))
         self.view.status_msg.set('start monitoring...')
+        worker_alive_list = {}
         for w, t in self.workers:
             w.daemon = True
             w.start()
+            worker_alive_list[w.pid] = True
+        
+        print('daemon mode:', self.daemon)
         while True:
             if self.state == 1:
-                # time.sleep(0.3)
-                is_all_worker_dead = True
                 for idx in range(len(self.workers)):
                     w, t = self.workers[idx]
                     if not w.is_alive() and self.state == 1 and self.daemon == True:
                         print('worker %s is dead, restarting' % w.pid)
+                        del worker_alive_list[w.pid]
                         w = Worker(t, self.context)
                         w.daemon = True
                         w.start()
+                        worker_alive_list[w.pid] = True
                         self.workers[idx] = (w, t)
                         print('finished, new pid: %s' % w.pid)
                     # if all worker finished their job, return
-                    if not self.daemon:
-                        if w.is_alive():
-                            is_all_worker_dead = False
-                            break
                 msg = self.msg_queue.get()
-                self.view_callback(msg)
+                if msg.status == utils.MSG_STATUS.terminated:
+                    worker_alive_list[msg.pid] = False
+                else:
+                    self.view_callback(msg)
+
+                is_all_worker_dead = True
+                for k,v in worker_alive_list.items():
+                    if v == True:
+                        is_all_worker_dead = False
+                        break
                 if is_all_worker_dead:
                     print('no one alive')
                     self.state = -1
@@ -196,6 +206,8 @@ class Controller:
                 len(ip_addr_list)
 
     def view_callback(self, msg):
+        if msg.status == utils.MSG_STATUS.terminated:
+            return
         self.job_count += 1
         self.ipaddr_to_status[msg.ip]['status'] = msg.status
         self.ipaddr_to_status[msg.ip]['total_count'] += 1

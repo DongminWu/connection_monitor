@@ -2,7 +2,7 @@ import platform
 from enum import Enum
 import os
 
-MSG_STATUS = Enum('MSG_STATUS', 'invalid disconnected reconnected')
+MSG_STATUS = Enum('MSG_STATUS', 'invalid disconnected reconnected terminated')
 
 
 def is_windows():
@@ -45,10 +45,11 @@ def load_ipaddr(path):
 
 
 class MessagePacket:
-    def __init__(self, ip, name, status):
+    def __init__(self, ip, name, status, pid):
         self.ip = ip
         self.name = name
         self.status = status
+        self.pid = pid
 
     def __str__(self):
         if self.status == MSG_STATUS.invalid:
@@ -57,4 +58,6 @@ class MessagePacket:
             return "%s/%s 断开" % (self.ip, self.name)
         elif self.status == MSG_STATUS.reconnected:
             return "%s/%s 链接" % (self.ip, self.name)
+        elif self.status == MSG_STATUS.terminated:
+            return 'pid:%d 终止' %(self.pid)
     

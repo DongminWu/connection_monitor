@@ -101,7 +101,6 @@ class MainView(Tk):
 
         self.working_t = None
         self.recorder = None
-        
 
     def initialize_view(self):
         self.title("auto ping")
@@ -146,7 +145,7 @@ class MainView(Tk):
         # 2. add count in config
         # 3. controller.daemon = False
         config = {
-            "MAX_NUM_OF_WORKERS": 4,
+            "MAX_NUM_OF_WORKERS": 20,
             "PING_COUNT": 1,
             'PING_SIZE': 1,
             'PING_WAIT_TIME': 20,
@@ -154,7 +153,8 @@ class MainView(Tk):
         }
         ipaddr_list = utils.load_ipaddr(self.ipaddr_file_box.get_text())
         self.my_recoder = Recorder(self.log_folder_box.get_text())
-        self.controller.initialize_worker(config, ipaddr_list, recorder=self.my_recoder)
+        self.controller.initialize_worker(
+            config, ipaddr_list, recorder=self.my_recoder)
         self.controller.daemon = False
         self.working_t = threading.Thread(target=self.controller.do_work)
         self.working_t.start()
@@ -162,7 +162,6 @@ class MainView(Tk):
     def on_press_stopbutton(self):
         print('terminating')
         self.controller.terminate()
-            
 
     def do_work(self):
         self.mainloop()
