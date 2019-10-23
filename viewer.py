@@ -168,14 +168,15 @@ class MainView(Tk):
     def view_callback(self, msg):
         self.history_list.append(str(msg))
         self.recorder.write(str(msg), datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S"))
-        self.ipaddr_to_status[msg.ip]['status'] = msg.status
         
         if msg.status == utils.MSG_STATUS.disconnected:
             self.status_list.set_red(self.ipaddr_to_status[msg.ip]['index'])
-            dialog_msg = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S") + " " + str(msg)
-            subprocess.Popen(['python', 'pop_window.py',dialog_msg], stdout=subprocess.PIPE)
+            if self.ipaddr_to_status[msg.ip]['status'] != msg.status:
+                dialog_msg = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S") + " " + str(msg)
+                subprocess.Popen(['python', 'pop_window.py',dialog_msg], stdout=subprocess.PIPE)
         elif msg.status == utils.MSG_STATUS.reconnected:
             self.status_list.set_green(self.ipaddr_to_status[msg.ip]['index'])
+        self.ipaddr_to_status[msg.ip]['status'] = msg.status
 
         print(self.ipaddr_to_status[msg.ip]['index'], msg)
 
@@ -200,7 +201,7 @@ class MainView(Tk):
 
                 self.ipaddr_to_status[ipaddr_list[idx]['ip']] = {
                     'name': ipaddr_list[idx]['name'], 
-                    'status': utils.MSG_STATUS.disconnected,
+                    'status': utils.MSG_STATUS.invalid,
                     'index': idx
                     }
 
