@@ -1,5 +1,5 @@
 from tkinter import *
-
+import subprocess
 import time
 import threading
 import utils
@@ -7,6 +7,7 @@ from controller import Controller
 from recorder import Recorder
 import datetime
 import multiprocessing
+
 
 '''
 class App(tkinter.Tk):
@@ -31,7 +32,9 @@ if __name__ == "__main__":
     top = App()
     top.lets_go()
 '''
-
+def pop_window():
+    messagebox.showwarning(title='warning', message='so this is a warningbox')
+    
 
 class ListView:
     def __init__(self, parent, name):
@@ -169,6 +172,8 @@ class MainView(Tk):
         
         if msg.status == utils.MSG_STATUS.disconnected:
             self.status_list.set_red(self.ipaddr_to_status[msg.ip]['index'])
+            dialog_msg = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S") + " " + str(msg)
+            subprocess.Popen(['python', 'pop_window.py',dialog_msg], stdout=subprocess.PIPE)
         elif msg.status == utils.MSG_STATUS.reconnected:
             self.status_list.set_green(self.ipaddr_to_status[msg.ip]['index'])
 
